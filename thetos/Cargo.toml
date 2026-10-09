@@ -1,0 +1,26 @@
+[package]
+name = "thetos_fixtures"
+version = "0.1.0"
+edition = "2021"
+description = "Compile-fail fixtures (fail_*) and their correct forms (ok_*) written against the ThetOS Nucleo-L152RE board crate"
+publish = false
+
+# The board crate (and the kernel it composes) are the released ThetOS tag.
+# Fixtures are checked for the real target, thumbv7m-none-eabi, with `cargo check` (no board needed).
+[dependencies]
+nucleo_l152re = { git = "https://github.com/rullo24/ThetOS", tag = "v1.1.0" }
+
+[features]
+fail_wrong_mode = []
+ok_wrong_mode = []
+fail_stale_handle = []
+ok_stale_handle = []
+fail_uart_before_init = []
+ok_uart_before_init = []
+fail_pwm_before_active = []
+ok_pwm_before_active = []
+fail_shared_state = []
+ok_shared_state = []
+
+# keep this crate out of any parent workspace
+[workspace]

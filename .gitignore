@@ -1,0 +1,7 @@
+target/
+freertos/FreeRTOS-Kernel/
+freertos/third_party/
+results/freertos/
+results/thetos/
+results/*.status
+.DS_Store

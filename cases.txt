@@ -1,0 +1,5 @@
+wrong_mode
+stale_handle
+uart_before_init
+pwm_before_active
+shared_state
