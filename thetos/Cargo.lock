@@ -75,5 +75,7 @@ source = "git+https://github.com/rullo24/ThetOS?tag=v1.1.0#9aa56e1c9a8dd12391dfa
 name = "thetos_fixtures"
 version = "0.1.0"
 dependencies = [
+ "cortex_m",
  "nucleo_l152re",
+ "specs",
 ]

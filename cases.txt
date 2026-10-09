@@ -1,5 +1,8 @@
+task_returns
+swapped_args
+critical_section
+shared_state
 wrong_mode
 stale_handle
 uart_before_init
 pwm_before_active
-shared_state

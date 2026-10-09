@@ -9,8 +9,15 @@ publish = false
 # Fixtures are checked for the real target, thumbv7m-none-eabi, with `cargo check` (no board needed).
 [dependencies]
 nucleo_l152re = { git = "https://github.com/rullo24/ThetOS", tag = "v1.1.0" }
+specs = { git = "https://github.com/rullo24/ThetOS", tag = "v1.1.0" }
+cortex_m = { git = "https://github.com/rullo24/ThetOS", tag = "v1.1.0" }
 
 [features]
+fail_task_returns = []
+ok_task_returns = []
+fail_swapped_args = []
+ok_swapped_args = []
+ok_critical_section = []
 fail_wrong_mode = []
 ok_wrong_mode = []
 fail_stale_handle = []

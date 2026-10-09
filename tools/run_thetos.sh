@@ -12,6 +12,9 @@ expected_code() {
         uart_before_init)  echo E0599 ;;
         pwm_before_active) echo E0599 ;;
         shared_state)      echo E0277 ;;
+        task_returns)      echo E0308 ;;
+        swapped_args)      echo E0308 ;;
+        critical_section)  echo NONE ;;  # not expressible: only the ok_ control exists
         *)                 echo UNKNOWN ;;
     esac
 }
@@ -19,12 +22,18 @@ expected_code() {
 status=0
 while read -r c; do
     [ -z "$c" ] && continue
-    ( cd thetos && cargo check --target thumbv7m-none-eabi --features "fail_$c" ) > "results/thetos/$c.fail.log" 2>&1
-    fail_exit=$?
+    code="$(expected_code "$c")"
+    if [ "$code" = NONE ]; then
+        fail_exit=NA; : > "results/thetos/$c.fail.log"
+    else
+        ( cd thetos && cargo check --target thumbv7m-none-eabi --features "fail_$c" ) > "results/thetos/$c.fail.log" 2>&1
+        fail_exit=$?
+    fi
     ( cd thetos && cargo check --target thumbv7m-none-eabi --features "ok_$c" ) > "results/thetos/$c.ok.log" 2>&1
     ok_exit=$?
-    code="$(expected_code "$c")"
-    if [ "$fail_exit" -ne 0 ] && grep -q "error\[$code\]" "results/thetos/$c.fail.log" && [ "$ok_exit" -eq 0 ]; then
+    if [ "$code" = NONE ]; then
+        [ "$ok_exit" -eq 0 ] && verdict="PASS" || { verdict="UNEXPECTED"; status=1; }
+    elif [ "$fail_exit" -ne 0 ] && grep -q "error\[$code\]" "results/thetos/$c.fail.log" && [ "$ok_exit" -eq 0 ]; then
         verdict="PASS"
     else
         verdict="UNEXPECTED"; status=1

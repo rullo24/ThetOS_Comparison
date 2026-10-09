@@ -2,6 +2,76 @@
 //! form of the same operation and must compile. Selected with `--features`; see tools/run_thetos.sh.
 #![no_std]
 
+// =================================== KERNEL LEVEL ===============================================
+
+// ---- a task function that returns ---------------------------------------------------------------
+#[cfg(feature = "fail_task_returns")]
+mod fail_task_returns {
+    use core::ptr::null_mut;
+    use nucleo_l152re::{System, TaskId, TaskPriority};
+    extern "C" fn task(_arg: *mut ()) -> ! {
+        // falls off the end
+    }
+    pub fn setup(sys: &mut System) {
+        let _ = sys.spawn_task(TaskId(1), TaskPriority::DEFAULT, 512, task, null_mut());
+    }
+}
+
+#[cfg(feature = "ok_task_returns")]
+mod ok_task_returns {
+    use core::ptr::null_mut;
+    use nucleo_l152re::{System, TaskId, TaskPriority};
+    extern "C" fn task(_arg: *mut ()) -> ! {
+        loop {}
+    }
+    pub fn setup(sys: &mut System) {
+        let _ = sys.spawn_task(TaskId(1), TaskPriority::DEFAULT, 512, task, null_mut());
+    }
+}
+
+// ---- priority and stack size swapped ------------------------------------------------------------
+#[cfg(feature = "fail_swapped_args")]
+mod fail_swapped_args {
+    use core::ptr::null_mut;
+    use nucleo_l152re::{System, TaskId, TaskPriority};
+    extern "C" fn task(_arg: *mut ()) -> ! {
+        loop {}
+    }
+    pub fn setup(sys: &mut System) {
+        let _ = sys.spawn_task(TaskId(1), 512, TaskPriority::DEFAULT, task, null_mut());
+    }
+}
+
+#[cfg(feature = "ok_swapped_args")]
+mod ok_swapped_args {
+    use core::ptr::null_mut;
+    use nucleo_l152re::{System, TaskId, TaskPriority};
+    extern "C" fn task(_arg: *mut ()) -> ! {
+        loop {}
+    }
+    pub fn setup(sys: &mut System) {
+        let _ = sys.spawn_task(TaskId(1), TaskPriority::DEFAULT, 512, task, null_mut());
+    }
+}
+
+// ---- critical section never exited: not expressible, so there is no fail_ fixture ---------------
+// ThetOS offers only the closure form; the section ends when the closure returns, on every path.
+#[cfg(feature = "ok_critical_section")]
+mod ok_critical_section {
+    use cortex_m::CortexMCriticalSection;
+    use specs::kernel::CriticalSection;
+    pub fn task(early: bool) -> u32 {
+        CortexMCriticalSection.with_execute(|| {
+            if early {
+                return 1;
+            }
+            2
+        })
+    }
+}
+
+// =================================== DRIVER LEVEL ===============================================
+
 // ---- wrong-mode access: writing to a pin configured as an input --------------------------------
 #[cfg(feature = "fail_wrong_mode")]
 mod fail_wrong_mode {
@@ -21,23 +91,23 @@ mod ok_wrong_mode {
     }
 }
 
-// ---- stale handle: reusing a pin handle after it changed state ---------------------------------
+// ---- stale handle: reusing a UART handle after it changed state --------------------------------
 #[cfg(feature = "fail_stale_handle")]
 mod fail_stale_handle {
-    use nucleo_l152re::{OutputStyle, PullState, UninitPin, PA6};
+    use nucleo_l152re::{Serial, UartConfig, UninitUart, PA2, PA3};
     pub fn task() {
-        let pin = PA6;
-        let _out = pin.into_output(OutputStyle::PushPull);
-        let _again = pin.into_input(PullState::HighZ);
+        let serial = Serial::usart2(PA2, PA3);
+        let _active = serial.into_active(UartConfig::default());
+        let _again = serial.into_active(UartConfig::default());
     }
 }
 
 #[cfg(feature = "ok_stale_handle")]
 mod ok_stale_handle {
-    use nucleo_l152re::{OutputStyle, UninitPin, PA6};
+    use nucleo_l152re::{Serial, UartConfig, UninitUart, PA2, PA3};
     pub fn task() {
-        let pin = PA6;
-        let _out = pin.into_output(OutputStyle::PushPull);
+        let serial = Serial::usart2(PA2, PA3);
+        let _active = serial.into_active(UartConfig::default());
     }
 }
 
@@ -79,7 +149,7 @@ mod ok_pwm_before_active {
     }
 }
 
-// ---- shared state between tasks (a Rust language guarantee, not a ThetOS design feature) -------
+// ---- shared state between tasks (kernel level; see KERNEL LEVEL group in the report) (a Rust language guarantee, not a ThetOS design feature) -------
 #[cfg(feature = "fail_shared_state")]
 mod fail_shared_state {
     use core::cell::Cell;
